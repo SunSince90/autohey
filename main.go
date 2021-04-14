@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"net/url"
 	"os"
 	"os/exec"
@@ -30,17 +31,27 @@ func main() {
 	var periods []time.Duration
 	var conns []int
 	var rates []int
+	var random int
 	var u string
 
 	flag.StringVar(&u, "url", "", "the url to send requests to, must include the scheme")
 	flag.DurationSliceVar(&periods, "periods", []time.Duration{}, "the hey periods")
 	flag.IntSliceVar(&conns, "connections", []int{}, "connections per period")
 	flag.IntSliceVar(&rates, "rate", []int{}, "rate per period")
+	flag.IntVar(&random, "random", 0, "if set, creates random X periods, each from 1m to 10m with random connections and rates")
 	flag.Parse()
 
 	if len(u) == 0 {
 		log.Error().Msg("no url provided, exiting...")
 		return
+	}
+
+	if random > 0 {
+		for i := 0; i < random; i++ {
+			periods = append(periods, generateRandomPeriod())
+			conns = append(conns, generateRandomConnection())
+			rates = append(rates, generateRandomRates())
+		}
 	}
 
 	if len(periods) == 0 {
@@ -119,4 +130,25 @@ func main() {
 	canc()
 	<-exitChan
 	log.Info().Msg("good bye!")
+}
+
+func generateRandomPeriod() time.Duration {
+	rand.Seed(time.Now().UnixNano())
+	min := 1
+	max := 5
+	return time.Duration((rand.Intn(max-min) + min)) * time.Minute
+}
+
+func generateRandomConnection() int {
+	rand.Seed(time.Now().UnixNano())
+	min := 1
+	max := 50
+	return rand.Intn(max-min) + min
+}
+
+func generateRandomRates() int {
+	rand.Seed(time.Now().UnixNano())
+	min := 3
+	max := 100
+	return rand.Intn(max-min) + min
 }
