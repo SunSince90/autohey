@@ -88,6 +88,8 @@ func main() {
 
 	ctx, canc := context.WithCancel(context.Background())
 	exitChan := make(chan struct{})
+	sig := make(chan os.Signal, 1)
+
 	go func() {
 		for _, hey := range heys {
 			args := []string{"-z", hey.duration.String()}
@@ -117,13 +119,12 @@ func main() {
 
 		log.Info().Msg("all commands finished, exiting...")
 		canc()
+		close(sig)
 		close(exitChan)
 	}()
 
 	// Graceful shutdown
-	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt)
-
 	<-sig
 	fmt.Println()
 
